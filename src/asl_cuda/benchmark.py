@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
-from .dataset import datasets
+from .dataset import datasets, data_fingerprint
 from .evidence import Monitor
 from .train import execute, warmup
 from .utils import config, device_for, hardware, write_json
@@ -31,12 +31,7 @@ def main(default_device=None):
     start = perf_counter()
     train, validation, test = datasets(c)
     # Huella de contenido antes del benchmark; no basta con nombres de imágenes.
-    digest = hashlib.sha256()
-    for data in (train, validation, test):
-        digest.update(data.manifest_hash.encode())
-        for path, _ in getattr(data, 'samples', []):
-            digest.update(path.read_bytes())
-    fingerprint = digest.hexdigest()
+    fingerprint = data_fingerprint((train, validation, test))
     setup_s = perf_counter() - start
     signature = hashlib.sha256(json.dumps(c, sort_keys=True).encode()).hexdigest()
     metadata = dict(config=c, hardware=hardware(), dataset_sha256=fingerprint,
@@ -49,8 +44,10 @@ def main(default_device=None):
     write_json(directory / f'{args.device}_metadata.json', metadata)
     for i in range(c['repeats']):
         run_id = f'{args.device}_{i+1}'
-        with Monitor(Path(c['output'])/'evidence'/session/f'{run_id}.csv'):
-            result, history = execute(c, device, train, validation, test)
+        with Monitor(Path(c['output'])/'evidence'/session/f'{run_id}.csv',
+                     gpu_id=metadata['hardware'].get('gpu_uuid') or 0):
+            result, history = execute(c, device, train, validation, test,
+                                      checkpoint=directory/f'{args.device}_model.pt' if i==c['repeats']-1 else None)
         row = dict(run_id=run_id, variant='cuda' if args.device=='cuda' else 'refactored_cpu',
                    synthetic=c['synthetic'], seed=c['seed'], n_images=len(train),
                    batch_size=c['batch_size'], epochs=c['epochs'], num_workers=c['num_workers'],

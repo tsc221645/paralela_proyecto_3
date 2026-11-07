@@ -4,11 +4,12 @@ from time import perf_counter
 import math
 import torch
 from .dataloader import loader
+from .dataset import CLASSES
 from .model import BasicCNN
 from .timing import timed, sync
 from .utils import seed_all
 
-def execute(config, device, train_data, validation, test_data):
+def execute(config, device, train_data, validation, test_data, checkpoint=None):
     seed_all(config['seed'], config['cpu_threads'])
     times = defaultdict(float)
     sync(device)
@@ -19,9 +20,10 @@ def execute(config, device, train_data, validation, test_data):
     if device.type == 'cuda':
         torch.cuda.reset_peak_memory_stats(device)
     history, events = [], []
+    train_loader = loader(train_data, config, shuffle=True)
     for epoch in range(config['epochs']):
         model.train()
-        iterator = iter(loader(train_data, config, shuffle=True))
+        iterator = iter(train_loader)
         for _ in range(len(iterator)):
             with timed(times, 'preprocess_s', torch.device('cpu')):
                 x, y = next(iterator)
@@ -40,6 +42,10 @@ def execute(config, device, train_data, validation, test_data):
     total = perf_counter() - total_start
     if not math.isfinite(metrics['loss']):
         raise RuntimeError('Pérdida no finita')
+    if checkpoint is not None:
+        torch.save(dict(state_dict={k: v.detach().cpu() for k,v in model.state_dict().items()},
+                        config=config, classes=CLASSES,
+                        metrics=metrics), checkpoint)
     return dict(**{k: times[k] for k in ('preprocess_s','h2d_s','train_s','eval_s','d2h_s')},
                 total_s=total, gpu_compute_s=sum(events),
                 peak_gpu_mem_mb=torch.cuda.max_memory_allocated(device)/2**20 if device.type=='cuda' else 0,

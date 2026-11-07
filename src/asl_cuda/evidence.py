@@ -7,8 +7,9 @@ import threading
 import psutil
 
 class Monitor:
-    def __init__(self, path):
+    def __init__(self, path, gpu_id=0):
         self.path = Path(path)
+        self.gpu_id = str(gpu_id)
         self.stop = threading.Event()
     def __enter__(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -23,7 +24,7 @@ class Monitor:
             while not self.stop.is_set():
                 util, memory = '', ''
                 try:
-                    r = subprocess.run(['nvidia-smi','--id=0','--query-gpu=utilization.gpu,memory.used',
+                    r = subprocess.run(['nvidia-smi','--id='+self.gpu_id,'--query-gpu=utilization.gpu,memory.used',
                                         '--format=csv,noheader,nounits'], capture_output=True, text=True, timeout=2)
                     if r.returncode == 0:
                         util, memory = r.stdout.strip().split(',')

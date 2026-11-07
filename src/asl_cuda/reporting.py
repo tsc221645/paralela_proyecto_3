@@ -35,7 +35,7 @@ def aggregate(directory):
                 raise ValueError(f'Máquina/código distintos: {key}')
     summary=[]
     for device, rows in groups.items():
-        for phase in PHASES+['h2d_s','d2h_s','gpu_compute_s','accuracy','loss']:
+        for phase in PHASES+['h2d_s','d2h_s','gpu_compute_s','peak_gpu_mem_mb','accuracy','loss']:
             values=[float(r[phase]) for r in rows]
             summary.append(dict(device=device,phase=phase,n=len(values),mean=mean(values),
                                 std=stdev(values),median=median(values)))

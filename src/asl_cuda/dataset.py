@@ -61,3 +61,12 @@ def datasets(config):
     directory = Path(config['splits_dir'])
     return tuple(ASLDataset(config['data_root'], directory / f'{s}_split.csv')
                  for s in ('train', 'validation', 'test'))
+
+
+def data_fingerprint(parts):
+    digest = hashlib.sha256()
+    for data in parts:
+        digest.update(data.manifest_hash.encode())
+        for path, _ in getattr(data, 'samples', []):
+            digest.update(path.read_bytes())
+    return digest.hexdigest()
