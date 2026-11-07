@@ -1,0 +1,15 @@
+dataset_name: SYNTHETIC_SMOKE_NOT_ASL
+output: results/smoke
+seed: 42
+batch_size: 4
+epochs: 1
+learning_rate: 0.001
+num_workers: 0
+cpu_threads: 1
+pin_memory: false
+repeats: 5
+warmup_batches: 1
+precision: float32
+synthetic: true
+synthetic_train: 12
+synthetic_eval: 6

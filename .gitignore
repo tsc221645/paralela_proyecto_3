@@ -1,0 +1,10 @@
+/ESPECIFICACIONES_PROYECTO_3_CUDA.md
+/lab3_datascience/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+/data/
+*.zip
+*.pt
+/results/smoke/
