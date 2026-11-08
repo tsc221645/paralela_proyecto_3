@@ -6,11 +6,13 @@ import argparse
 import csv
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
 from time import perf_counter
 import tensorflow as tf
-from asl_cuda.utils import config
-from asl_cuda.dataset import CLASSES
+from asl_cuda.utils import config, write_json, hardware
+from asl_cuda.dataset import CLASSES, datasets, data_fingerprint
+from asl_cuda.evidence import Monitor
 
 def load_original():
     spec = importlib.util.spec_from_file_location('original_models', 'reference/models_keras.py')
@@ -41,6 +43,11 @@ if __name__ == '__main__':
     out = Path(c['output'])/'original_cpu'; out.mkdir(parents=True, exist_ok=True)
     path = out/'original_cpu_runs.csv'
     if path.exists(): raise FileExistsError('Conserve resultados previos; cambie output')
+    write_json(out/'metadata.json',dict(config=c, hardware=hardware(), tensorflow=tf.__version__,
+               config_sha256=hashlib.sha256(json.dumps(c,sort_keys=True).encode()).hexdigest(),
+               dataset_sha256=data_fingerprint(datasets(c)),
+               callbacks='EarlyStopping patience=4, ReduceLROnPlateau patience=2',
+               timing='fit includes validation + final test evaluate; initialization excluded'))
     for i in range(c['repeats']):
         tf.keras.backend.clear_session(); tf.keras.utils.set_random_seed(c['seed'])
         model = original.build_basic_cnn((64,64,3),29); original.compile_model(model,c['learning_rate'])
@@ -51,12 +58,16 @@ if __name__ == '__main__':
             model.train_on_batch(np.zeros((c['batch_size'],64,64,3),dtype='float32'),np.zeros(c['batch_size'],dtype='int32'))
         model.set_weights(weights); original.compile_model(model,c['learning_rate'])
         train = make_dataset(c,'train',True); val = make_dataset(c,'validation'); test = make_dataset(c,'test')
-        start = perf_counter()
-        model.fit(train,validation_data=val,epochs=c['epochs'],verbose=2)
-        train_validation = perf_counter()-start
-        t = perf_counter(); loss,accuracy=model.evaluate(test,verbose=0); evaluate=perf_counter()-t
-        row=dict(run_id=i+1,variant='original_cpu',train_validation_s=train_validation,
-                 test_eval_s=evaluate,total_s=perf_counter()-start,loss=loss,accuracy=accuracy)
+        with Monitor(out/f'cpu_evidence_{i+1}.csv'):
+            start = perf_counter()
+            history=model.fit(train,validation_data=val,epochs=c['epochs'],verbose=2,
+                      callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=4,restore_best_weights=True),
+                                 tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',factor=.5,patience=2,min_lr=1e-6)])
+            train_validation = perf_counter()-start
+            t = perf_counter(); loss,accuracy=model.evaluate(test,verbose=0); evaluate=perf_counter()-t
+            row=dict(run_id=i+1,variant='original_cpu',actual_epochs=len(history.epoch),train_validation_s=train_validation,
+                     test_eval_s=evaluate,total_s=perf_counter()-start,loss=loss,accuracy=accuracy)
+        write_json(out/f'cpu_{i+1}_epochs.json',history.history)
         with path.open('a',newline='') as f:
             w=csv.DictWriter(f,fieldnames=list(row))
             if i==0:w.writeheader()

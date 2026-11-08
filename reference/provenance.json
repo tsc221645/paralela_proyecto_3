@@ -1,0 +1,13 @@
+{
+  "original_commit": null,
+  "note": "Referencia recibida sin repositorio Git operativo; hashes de archivos reales",
+  "sha256": {
+    "lab3_datascience/src/models.py": "bb24cd1f832c4c139152226f100d1ae9f1e5841929f68c854882feb717540c4f",
+    "lab3_datascience/src/preprocessing.py": "e83b005e8c394c932a464fb5c7aaed924d750b72abfe75f18c8a8623b7603fb5",
+    "lab3_datascience/notebooks/01_avance_asl.ipynb": "a02626d9d5c013fa5ce3b4afb5a38d68a97b3c15ad84fbf390ca6385e6494a5f",
+    "lab3_datascience/notebooks/02_entrega_final_asl.ipynb": "f3d61058e20fd2ebc8586f37fb163ca94f33d7545f27d89efebf2311ff8b0b9c",
+    "manifests/test_split.csv": "65006ab9c2ae4f503683a0b0975cede0d553ba3145e0bc58deed50712e758976",
+    "manifests/train_split.csv": "98d2c9f47da5d64f961dc1c658fba07e3011073a1b6ae709a3e55a039a4b3c1c",
+    "manifests/validation_split.csv": "410a2d3b5a7b5d63ce8aba9fe371212d5061d0d5d2aee9b36c283dbe74e4ca55"
+  }
+}

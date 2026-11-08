@@ -10,6 +10,10 @@ if __name__ == '__main__':
     p.add_argument('--repeats', type=int, default=5)
     p.add_argument('--devices', nargs='+', choices=['cpu','cuda'], default=['cpu','cuda'])
     a = p.parse_args()
+    if 'cuda' in a.devices:
+        import _bootstrap
+        from asl_cuda.utils import device_for
+        device_for('cuda')
     session = uuid4().hex[:12]
     for device in a.devices:
         subprocess.run([sys.executable, f'scripts/run_{device}.py', '--config', a.config,

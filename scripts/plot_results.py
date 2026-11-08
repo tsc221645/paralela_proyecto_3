@@ -2,6 +2,10 @@ import _bootstrap
 import argparse
 import json
 from pathlib import Path
+from statistics import mean, stdev
+import os
+import tempfile
+os.environ.setdefault('MPLCONFIGDIR',str(Path(tempfile.gettempdir())/'asl-cuda-mpl'))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -27,6 +31,27 @@ def main():
     groups,meta,summary,speedups=aggregate(root)
     out=Path(a.output) if a.output else root/'analysis';out.mkdir(parents=True,exist_ok=True)
     write_csv(out/'summary.csv',summary);write_csv(out/'speedup.csv',speedups)
+    original_note='Referencia Keras original no medida en esta sesión; ejecutar original_cpu.py.'
+    original_dir=root.parent.parent/'original_cpu'
+    if (original_dir/'metadata.json').exists() and 'cpu' in groups:
+        import csv
+        original_meta=json.loads((original_dir/'metadata.json').read_text())
+        for key in ('config_sha256','dataset_sha256'):
+            if original_meta[key]!=meta['cpu'][key]:
+                raise ValueError('Referencia Keras y CPU usan condiciones/datos diferentes')
+        for key in ('platform','cpu','cores','ram_gb'):
+            if original_meta['hardware'][key]!=meta['cpu']['hardware'][key]:
+                raise ValueError('Referencia Keras de otra máquina')
+        original_rows=list(csv.DictReader((original_dir/'original_cpu_runs.csv').open()))
+        if len(original_rows)<5:raise ValueError('Referencia Keras requiere 5 repeticiones')
+        original_times=[float(r['total_s']) for r in original_rows]
+        ref_times=[float(r['total_s']) for r in groups['cpu']]
+        comparison=[dict(variant='original_keras_cpu',mean_total_s=mean(original_times),std_total_s=stdev(original_times)),
+                    dict(variant='refactored_pytorch_cpu',mean_total_s=mean(ref_times),std_total_s=stdev(ref_times))]
+        write_csv(out/'original_comparison.csv',comparison)
+        original_note=('Referencia Keras CPU: media total %.6f s, std %.6f s. CPU PyTorch: media %.6f s. '
+                       'Comparación auxiliar: frameworks, callbacks y fronteras temporales diferentes; '
+                       'este cociente no mide aceleración CUDA.')%(mean(original_times),stdev(original_times),mean(ref_times))
     synthetic=next(iter(meta.values()))['config']['synthetic']
     label='SINTÉTICO: prueba de ejecución, sin validez ASL' if synthetic else 'ASL Alphabet'
     fig,ax=plt.subplots(figsize=(10,5))
@@ -48,10 +73,13 @@ def main():
         for path in files:
             import csv
             rows=list(csv.DictReader(path.open()))
-            ax.plot([i*.5 for i in range(len(rows))],[float(r['cpu_percent']) for r in rows],label=path.stem+' CPU')
+            from datetime import datetime
+            timestamps=[datetime.fromisoformat(r['utc']).timestamp() for r in rows]
+            elapsed=[t-timestamps[0] for t in timestamps]
+            ax.plot(elapsed,[float(r['cpu_percent']) for r in rows],label=path.stem+' CPU')
             if rows and all(r['gpu_util_percent'].strip() for r in rows):
-                ax.plot([i*.5 for i in range(len(rows))],[float(r['gpu_util_percent']) for r in rows],label=path.stem+' GPU')
-        ax.set_xlabel('Índice de muestra × 0.5 s (aproximado)');ax.set_ylabel('Uso global (%)')
+                ax.plot(elapsed,[float(r['gpu_util_percent']) for r in rows],label=path.stem+' GPU')
+        ax.set_xlabel('Segundos desde primera muestra (UTC)');ax.set_ylabel('Uso global (%)')
         ax.legend(fontsize=6);fig.tight_layout();fig.savefig(out/'cpu_gpu_utilization.png');plt.close(fig)
     with PdfPages(out/'informe_rendimiento.pdf') as pdf:
         page(pdf,'Proyecto 3: CPU y CUDA para ASL',[
@@ -81,6 +109,7 @@ def main():
             'Las imágenes permanecen en CPU por I/O, decodificación y requisito del proyecto. Las convoluciones y álgebra densa ofrecen paralelismo por lote, canales y píxeles que CUDA puede explotar.',
             'Ayudan lotes suficientes y buena alimentación de datos; limitan CPU/I/O, transferencias, VRAM, lanzamientos y carga pequeña. Pin memory y workers son experimentos separados; no se presume que mejoren.',
             'Evidencia: metadata JSON y CSV de utilización por corrida. Muestreo global de GPU, no atribución exclusiva al proceso; para entrega adjuntar captura de nvidia-smi durante la ejecución. La memoria reportada por PyTorch es propia del proceso.',
+            original_note,
             'Comparación con Keras original: script auxiliar original_cpu.py; no atribuir diferencias de frameworks, JPEG, inicialización ni callbacks a CUDA. El notebook completo no se ejecutó aquí por ausencia del dataset. El experimento principal compara únicamente PyTorch CPU/CUDA.',
             'Métricas finales: test separado, validación cada época. Datos sintéticos solo comprueban funcionamiento; no prueban calidad ASL. Validación de equivalencia y tolerancias en tests/test_equivalence.py.',
             'Equipo, aportes y URL de repositorio: deben completarse por los tres integrantes en docs/contribution_log.md. No se inventan autores, commits, revisiones ni ejecuciones GPU.',

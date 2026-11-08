@@ -1,10 +1,48 @@
+# Material local de referencia y documentación excluida
 /ESPECIFICACIONES_PROYECTO_3_CUDA.md
 /lab3_datascience/
+/docs/
+/commits_local.sh
+
+# Informes, resultados, evidencia y modelos generados
+/report/
+/reports/
+/results/
+*.pdf
+*.log
+*.pt
+*.pth
+*.h5
+*.keras
+*.ckpt
+
+# Dataset y archivos comprimidos
+/data/
+*.zip
+
+# Entornos y cachés de Python
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-/data/
-*.zip
-*.pt
-/results/smoke/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Configuración local del editor, herramientas y credenciales
+/.agents/
+/.codex/
+/.aws/
+.vscode/
+.idea/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
