@@ -18,5 +18,7 @@ if __name__ == '__main__':
     for device in a.devices:
         subprocess.run([sys.executable, f'scripts/run_{device}.py', '--config', a.config,
                         '--repeats', str(a.repeats), '--session', session], check=True)
+    benchmark_config = __import__('yaml').safe_load(Path(a.config).read_text())
     subprocess.run([sys.executable, 'scripts/plot_results.py', '--input',
-                    str(Path(__import__('yaml').safe_load(Path(a.config).read_text())['output'])/'raw'/session)], check=True)
+                    str(Path(benchmark_config['output'])/'raw'/session),
+                    '--min-repeats', str(benchmark_config['repeats'])], check=True)

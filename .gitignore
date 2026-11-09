@@ -1,13 +1,22 @@
 # Material local de referencia y documentación excluida
 /ESPECIFICACIONES_PROYECTO_3_CUDA.md
 /lab3_datascience/
-/docs/
 /commits_local.sh
 
+# La documentación de la entrega sí debe poder versionarse.
+!/docs/
+!/docs/**
+!/report/
+!/report/**
+
 # Informes, resultados, evidencia y modelos generados
-/report/
 /reports/
 /results/
+
+# Resultados generados y checkpoints: conservar localmente, no commitear.
+/results_fast/raw/
+/results_fast/evidence/
+/results_fast/analysis/
 *.pdf
 *.log
 *.pt
@@ -26,6 +35,7 @@ venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
 .ipynb_checkpoints/
 .mypy_cache/
 .ruff_cache/

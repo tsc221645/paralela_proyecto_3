@@ -27,8 +27,10 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('--input',required=True,help='Carpeta de UNA sesión results/raw/ID')
     p.add_argument('--output')
+    p.add_argument('--min-repeats',type=int,default=5,
+                   help='Mínimo de repeticiones requerido por backend (default: 5)')
     a=p.parse_args(); root=Path(a.input)
-    groups,meta,summary,speedups=aggregate(root)
+    groups,meta,summary,speedups=aggregate(root,min_repeats=a.min_repeats)
     out=Path(a.output) if a.output else root/'analysis';out.mkdir(parents=True,exist_ok=True)
     write_csv(out/'summary.csv',summary);write_csv(out/'speedup.csv',speedups)
     original_note='Referencia Keras original no medida en esta sesión; ejecutar original_cpu.py.'
@@ -117,5 +119,20 @@ def main():
         for name in ('times_by_phase.png','speedup_by_phase.png','cpu_gpu_utilization.png'):
             if (out/name).exists():
                 fig,ax=plt.subplots(figsize=(11,7));ax.imshow(plt.imread(out/name));ax.axis('off');pdf.savefig(fig);plt.close(fig)
+        screenshot_dir = root.parent.parent/'screenshots'
+        for screenshot in sorted(screenshot_dir.glob('*')) if screenshot_dir.exists() else []:
+            if screenshot.suffix.lower() not in {'.png', '.jpg', '.jpeg'}:
+                continue
+            try:
+                image = plt.imread(screenshot)
+            except (OSError, ValueError):
+                continue
+            fig, ax = plt.subplots(figsize=(11, 7))
+            ax.imshow(image)
+            ax.axis('off')
+            fig.suptitle('Evidencia visual: '+screenshot.name, fontsize=13)
+            fig.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
     print(out/'informe_rendimiento.pdf')
 if __name__=='__main__':main()

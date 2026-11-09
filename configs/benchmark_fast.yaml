@@ -1,0 +1,16 @@
+dataset_name: ASL Alphabet
+# Configuración rápida para validar CPU/CUDA sin dejar la máquina trabajando toda la noche.
+data_root: lab3_datascience/data/asl_alphabet_train/asl_alphabet_train
+splits_dir: manifests
+output: results_fast
+seed: 42
+batch_size: 64
+epochs: 5
+learning_rate: 0.001
+num_workers: 0
+cpu_threads: 16
+pin_memory: false
+repeats: 5
+warmup_batches: 1
+precision: float32
+synthetic: false

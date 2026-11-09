@@ -1,6 +1,6 @@
 dataset_name: ASL Alphabet
 # Carpeta que contiene A/, B/, ..., space/.
-data_root: data/asl_alphabet_train/asl_alphabet_train
+data_root: lab3_datascience/data/asl_alphabet_train/asl_alphabet_train
 splits_dir: manifests
 output: results
 seed: 42

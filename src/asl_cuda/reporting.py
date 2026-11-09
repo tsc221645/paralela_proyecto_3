@@ -7,7 +7,9 @@ from statistics import mean, stdev, median
 
 PHASES = ['preprocess_s','train_s','eval_s','total_s']
 
-def aggregate(directory):
+def aggregate(directory, min_repeats=5):
+    if not isinstance(min_repeats, int) or min_repeats < 1:
+        raise ValueError('min_repeats debe ser entero positivo')
     directory = Path(directory)
     groups, metadata = {}, {}
     for device in ('cpu','cuda'):
@@ -15,7 +17,8 @@ def aggregate(directory):
         if not path.exists(): continue
         rows = list(csv.DictReader(path.open()))
         if not rows: raise ValueError('CSV vacío')
-        if len(rows) < 5: raise ValueError('Se requieren al menos cinco repeticiones')
+        if len(rows) < min_repeats:
+            raise ValueError(f'Se requieren al menos {min_repeats} repeticiones')
         meta = json.loads((directory/f'{device}_metadata.json').read_text())
         for row in rows:
             for key in ('config_sha256','dataset_sha256'):
