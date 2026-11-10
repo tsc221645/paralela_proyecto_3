@@ -4,6 +4,19 @@ Refactorización del Laboratorio 3 para comparar su CNN básica en PyTorch CPU/C
 
 El original y las especificaciones están excluidos en `.gitignore` según lo solicitado. Las arquitecturas originales y hashes de procedencia están en `reference/`; los splits portables en `manifests/`. No hay dataset de entrenamiento incluido. Los resultados sintéticos solo verifican el programa.
 
+## Resultados resumidos de la corrida real
+
+La comparación se realizó con el dataset ASL real, cinco repeticiones por backend, batch size 64, cinco épocas y 16 hilos de CPU, en la misma computadora con una NVIDIA GeForce RTX 3050. El preprocesamiento de imágenes permaneció en CPU y la CNN, la función de pérdida, los gradientes y Adam se ejecutaron en CUDA.
+
+| Fase | CPU (s) | CUDA (s) | Speedup | Reducción |
+|---|---:|---:|---:|---:|
+| Preprocesamiento | 89.721 | 76.727 | 1.169× | 14.48% |
+| Entrenamiento | 80.102 | 17.879 | 4.480× | 77.68% |
+| Evaluación | 7.505 | 1.576 | 4.762× | 79.00% |
+| **Total** | **177.463** | **97.592** | **1.818×** | **45.01%** |
+
+La exactitud final fue 0.851 en CPU y 0.877 en CUDA. El resultado confirma que CUDA acelera principalmente el entrenamiento y la evaluación; el preprocesamiento en CPU limita la mejora total. Los tiempos corresponden a medias de cinco repeticiones y están documentados con mayor detalle en el [informe detallado](reportes/ppd-informe-p-3-detallado.md), junto con las capturas, gráficas, metodología y limitaciones.
+
 ## Instalación en otra computadora
 
 Recomendado: Python 3.12, Linux o Windows con GPU NVIDIA y controlador compatible. En Windows usar terminal con el entorno activado; no requiere WSL para PyTorch. Ejecutar siempre desde esta raíz.
